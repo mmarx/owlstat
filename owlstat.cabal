@@ -22,3 +22,4 @@ executable owlstat
                      , filesystem-conduit == 1.0.*
                      , system-filepath ==0.4.*
                      , text ==0.11.*
+                     , transformers ==0.3.*
