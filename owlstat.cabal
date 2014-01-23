@@ -18,5 +18,7 @@ executable owlstat
   main-is:           Main.hs
   -- other-modules:
   build-depends:       base ==4.6.*
+                     , conduit == 1.0.*
+                     , filesystem-conduit == 1.0.*
                      , system-filepath ==0.4.*
                      , text ==0.11.*
