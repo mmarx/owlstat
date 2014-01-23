@@ -125,8 +125,8 @@ statFile path = do
   print counts
   return ()
 
-treeStat :: FilePath -> IO ()
-treeStat path = case toText path of
+statTree :: FilePath -> IO ()
+statTree path = case toText path of
   Left p -> error . unpack $ "could not decode path `" <> p <> "'"
   Right p -> do
     TIO.putStrLn $ "traversing `" <> p <> "'"
@@ -136,4 +136,4 @@ treeStat path = case toText path of
           _ -> return ()
 
 main :: IO ()
-main = getArgs >>= mapM_ (treeStat . fromText . pack)
+main = getArgs >>= mapM_ (statTree . fromText . pack)
