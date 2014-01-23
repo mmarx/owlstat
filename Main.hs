@@ -19,9 +19,10 @@ import Data.Text ( Text
                  )
 import qualified Data.Text.IO as TIO
 import System.Environment (getArgs)
-import Filesystem.Path.CurrentOS ( fromText
+import Filesystem.Path.CurrentOS ( extension
+                                 , fromText
                                  , toText
-                                 ,  FilePath
+                                 , FilePath
                                  )
 
 needles :: [(Text, [Text])]
@@ -38,8 +39,9 @@ statFile :: FilePath -> IO ()
 statFile path = case toText path of
   Left p -> error . unpack $ "could not decode path `" <> p <> "'"
   Right p -> do
-    TIO.putStrLn $ "got file `" <> p <> "'"
-    return ()
+    case extension path of
+      Just "owl" -> TIO.putStrLn $ "got file `" <> p <> "'"
+      _ -> return ()
 
 treeStat :: FilePath -> IO ()
 treeStat path = case toText path of
