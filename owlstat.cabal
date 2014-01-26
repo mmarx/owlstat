@@ -17,9 +17,12 @@ cabal-version:       >=1.8
 executable owlstat
   main-is:           Main.hs
   -- other-modules:
+  ghc-options:       -Wall -Werror -O2 -rtsopts=all
+  ghc-prof-options:  -prof -auto-all -caf-all -rtsopts=all
   build-depends:       base ==4.6.*
-                     , conduit == 1.0.*
-                     , filesystem-conduit == 1.0.*
+                     , conduit ==1.0.*
+                     , filesystem-conduit ==1.0.*
+                     , system-fileio ==0.3.*
                      , system-filepath ==0.4.*
                      , text ==0.11.*
                      , transformers ==0.3.*

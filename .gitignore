@@ -2,3 +2,7 @@
 dist*/
 *~
 #*#
+*.aux
+*.hp
+*.prof
+*.ps

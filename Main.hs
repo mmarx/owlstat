@@ -20,17 +20,12 @@ import Prelude hiding ( FilePath
                       , words
                       )
 
-import Control.Applicative ( (<$>)
-                           , (<*>)
-                           )
-import Control.Monad.IO.Class ( MonadIO
-                              , liftIO
-                              )
+import Control.Monad.IO.Class (MonadIO)
 import Data.Conduit ( ($$)
                     , (=$)
                     , await
                     , runResourceT
-                    , Sink (..)
+                    , Sink
                     )
 import Data.Conduit.Text ( decode
                          , utf8
@@ -42,7 +37,6 @@ import Data.Conduit.Filesystem ( sourceFile
                                )
 import Data.Monoid ( Monoid (..)
                    , (<>)
-                   , mconcat
                    )
 import Data.Text ( Text
                  , pack
@@ -51,12 +45,13 @@ import Data.Text ( Text
                  , words
                  )
 import qualified Data.Text.IO as TIO
-import System.Environment (getArgs)
+import Filesystem (isFile)
 import Filesystem.Path.CurrentOS ( extension
                                  , fromText
                                  , toText
                                  , FilePath
                                  )
+import System.Environment (getArgs)
 
 needles :: [(Text, [Text])]
 needles = [ ("Datatypes", [ "DataIntersectionOf"
@@ -91,15 +86,15 @@ newtype Count = Count [(Text, Integer)]
 
 instance Monoid Count where
   mempty = Count $ map (\(tag, _) -> (tag, 0)) needles
-  mappend (Count l) (Count r) = Count $ zipWith sum l r
-    where sum (tag, cnt) (_, cnt') = (tag, cnt + cnt')
+  mappend (Count l) (Count r) = Count $! zipWith acc l r
+    where acc (tag, cnt) (_, cnt') = (tag, cnt + cnt')
 
 sink :: MonadIO m => Sink Text m Count
 sink = go mempty
   where go cnt = do
           mLine <- await
           case mLine of
-            Just line -> go $! cnt <> (countWords $ words line)
+            Just line -> go $! cnt <> (countWords $! words line)
             Nothing -> return $! cnt
 
 countWords :: [Text] -> Count
@@ -108,9 +103,9 @@ countWords lst = go lst mempty
         go (w:ws) cnt = go ws $! countWord (takeWhile (/='(') w) <> cnt
 
 countWord :: Text -> Count
-countWord w = Count $ map (countNeedle w) needles
-  where countNeedle word (tag, needles)
-          | word `elem` needles = (tag, 1)
+countWord w = Count $! map (countNeedle w) needles
+  where countNeedle word (tag, needles')
+          | word `elem` needles' = (tag, 1)
           | otherwise = (tag, 0)
 
 statFile :: FilePath -> IO ()
@@ -130,9 +125,12 @@ statTree path = case toText path of
   Left p -> error . unpack $ "could not decode path `" <> p <> "'"
   Right p -> do
     TIO.putStrLn $ "traversing `" <> p <> "'"
-    traverse True path $$ CL.mapM_ maybeStatFile
-  where maybeStatFile path = case extension path of
-          Just "owl" -> statFile path
+    isF <- isFile path
+    if isF
+      then statFile path
+      else traverse True path $$ CL.mapM_ maybeStatFile
+  where maybeStatFile p = case extension p of
+          Just "owl" -> statFile p
           _ -> return ()
 
 main :: IO ()
