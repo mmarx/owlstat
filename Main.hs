@@ -36,7 +36,9 @@ import Data.Conduit.Filesystem ( sourceFile
                                )
 import Data.HashMap.Strict ( HashMap
                            , elems
+                           , empty
                            , fromList
+                           , lookupDefault
                            , unionWith
                            )
 import Data.Monoid ( Monoid (..)
@@ -140,8 +142,15 @@ printTree stats = do
   let stats' = filter (any (/=0) . elems . snd) stats
       cnt = length stats'
   putStrLn $ "Found " <> show cnt <> " interesting ontologies."
-  mapM_ printEntry stats'
-  where printEntry = print
+  print $ statify stats' empty
+  where statify [] m = m
+        statify ((_, s):ss) m = statify ss $
+                                unionWith (+) m $
+                                fromList [ (k, val k s)
+                                         | (k, _) <- needles
+                                         ]
+        val :: Text -> Count -> Int
+        val k s = if 0 == lookupDefault 0 k s then 0 else 1
 
 main :: IO ()
 main = getArgs >>= mapM_ (statTree . fromText . pack)
