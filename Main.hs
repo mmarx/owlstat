@@ -18,7 +18,9 @@ import Prelude hiding ( FilePath
                       , lines
                       )
 
-import Control.Monad (void)
+import Control.Monad ( void
+                     , when
+                     )
 import Control.Monad.IO.Class (MonadIO)
 import Data.Conduit ( ($$)
                     , (=$)
@@ -121,7 +123,7 @@ statFile path = do
             $$ decode utf8
             =$ lines
             =$ sink
-  print counts
+  when (any (/=0) . elems $ counts) $ print counts
   return [(name, counts)]
 
 statTree :: FilePath -> IO ()
