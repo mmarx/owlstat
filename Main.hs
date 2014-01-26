@@ -16,10 +16,9 @@ module Main (main) where
 
 import Prelude hiding ( FilePath
                       , lines
-                      , takeWhile
-                      , words
                       )
 
+import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Conduit ( ($$)
                     , (=$)
@@ -36,16 +35,17 @@ import Data.Conduit.Filesystem ( sourceFile
                                , traverse
                                )
 import Data.HashMap.Strict ( HashMap
+                           , elems
                            , fromList
+                           , unionWith
                            )
 import Data.Monoid ( Monoid (..)
                    , (<>)
                    )
 import Data.Text ( Text
                  , pack
-                 , takeWhile
+                 , split
                  , unpack
-                 , words
                  )
 import qualified Data.Text.IO as TIO
 import Filesystem (isFile)
@@ -60,7 +60,6 @@ needles :: [(Text, [Text])]
 needles = [ ("Datatypes", [ "DataIntersectionOf"
                           , "DataUnionOf"
                           , "DataComplementOf"
-                          , "DataOneOf"
                           , "DatatypeRestriction"
                           , "DataSomeValuesFrom"
                           , "DataAllValuesFrom"
@@ -73,7 +72,7 @@ needles = [ ("Datatypes", [ "DataIntersectionOf"
                           , "DisjointDataProperties"
                           , "DataPropertyDomain"
                           , "DataPropertyRange"
-                          , "FunctionalDataProperty"
+                          , "DataPropertyAssertion"
                           , "DatatypeDefinition"
                           ])
           , ("universal role", ["owl:topObjectProperty"])
@@ -91,13 +90,19 @@ sink = go mempty
   where go cnt = do
           mLine <- await
           case mLine of
-            Just line -> go $! cnt <> (countWords $! words line)
+            Just line -> go $! unionWith (+) cnt $! (countWords $! split isDelim line)
             Nothing -> return $! cnt
+        isDelim ' ' = True
+        isDelim '\r' = True
+        isDelim '\n' = True
+        isDelim '(' = True
+        isDelim ')' = True
+        isDelim _ = False
 
 countWords :: [Text] -> Count
 countWords lst = go lst mempty
   where go [] cnt = cnt
-        go (w:ws) cnt = go ws $! countWord (takeWhile (/='(') w) <> cnt
+        go (w:ws) cnt = go ws $! unionWith (+) (countWord w) cnt
 
 countWord :: Text -> Count
 countWord w = fromList $ map (countNeedle w) needles
@@ -105,17 +110,17 @@ countWord w = fromList $ map (countNeedle w) needles
           | word `elem` needles' = (tag, 1)
           | otherwise = (tag, 0)
 
-statFile :: FilePath -> IO ()
+statFile :: FilePath -> IO [(Text, Count)]
 statFile path = do
-  case toText path of
-    Left p -> TIO.putStrLn $ "could not decode path `" <> p <> "'"
-    Right p -> TIO.putStrLn $ "analyzing `" <> p <> "'"
+  name <- case toText path of
+    Left p -> TIO.putStrLn ("could not decode path `" <> p <> "'") >> return p
+    Right p -> TIO.putStrLn ("analyzing `" <> p <> "'") >> return p
   counts <- runResourceT $ sourceFile path
             $$ decode utf8
             =$ lines
             =$ sink
   print counts
-  return ()
+  return [(name, counts)]
 
 statTree :: FilePath -> IO ()
 statTree path = case toText path of
@@ -124,11 +129,19 @@ statTree path = case toText path of
     TIO.putStrLn $ "traversing `" <> p <> "'"
     isF <- isFile path
     if isF
-      then statFile path
-      else traverse True path $$ CL.mapM_ maybeStatFile
+      then void $ statFile path
+      else (traverse True path $$ CL.foldMapM maybeStatFile) >>= printTree
   where maybeStatFile p = case extension p of
           Just "owl" -> statFile p
-          _ -> return ()
+          _ -> return []
+
+printTree :: [(Text, Count)] -> IO ()
+printTree stats = do
+  let stats' = filter (any (/=0) . elems . snd) stats
+      cnt = length stats'
+  putStrLn $ "Found " <> show cnt <> " interesting ontologies."
+  mapM_ printEntry stats'
+  where printEntry = print
 
 main :: IO ()
 main = getArgs >>= mapM_ (statTree . fromText . pack)
