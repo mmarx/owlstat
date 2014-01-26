@@ -26,3 +26,4 @@ executable owlstat
                      , system-filepath ==0.4.*
                      , text ==0.11.*
                      , transformers ==0.3.*
+                     , unordered-containers ==0.2.*

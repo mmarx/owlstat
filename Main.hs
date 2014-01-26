@@ -35,6 +35,9 @@ import qualified Data.Conduit.List as CL
 import Data.Conduit.Filesystem ( sourceFile
                                , traverse
                                )
+import Data.HashMap.Strict ( HashMap
+                           , fromList
+                           )
 import Data.Monoid ( Monoid (..)
                    , (<>)
                    )
@@ -81,13 +84,7 @@ needles = [ ("Datatypes", [ "DataIntersectionOf"
           , ("HasKey", ["HasKey"])
           ]
 
-newtype Count = Count [(Text, Integer)]
-              deriving (Read, Show, Eq)
-
-instance Monoid Count where
-  mempty = Count $ map (\(tag, _) -> (tag, 0)) needles
-  mappend (Count l) (Count r) = Count $! zipWith acc l r
-    where acc (tag, cnt) (_, cnt') = (tag, cnt + cnt')
+type Count = HashMap Text Int
 
 sink :: MonadIO m => Sink Text m Count
 sink = go mempty
@@ -103,7 +100,7 @@ countWords lst = go lst mempty
         go (w:ws) cnt = go ws $! countWord (takeWhile (/='(') w) <> cnt
 
 countWord :: Text -> Count
-countWord w = Count $! map (countNeedle w) needles
+countWord w = fromList $ map (countNeedle w) needles
   where countNeedle word (tag, needles')
           | word `elem` needles' = (tag, 1)
           | otherwise = (tag, 0)
