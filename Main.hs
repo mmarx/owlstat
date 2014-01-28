@@ -61,31 +61,73 @@ import Filesystem.Path.CurrentOS ( extension
 import System.Environment (getArgs)
 
 needles :: [(Text, [Text])]
-needles = [ ("Datatypes", [ "DataIntersectionOf"
-                          , "DataUnionOf"
-                          , "DataComplementOf"
-                          , "DatatypeRestriction"
-                          , "DataSomeValuesFrom"
-                          , "DataAllValuesFrom"
-                          , "DataHasValue"
-                          , "DataMinCardinality"
-                          , "DataMaxCardinality"
-                          , "DataExactCardinality"
-                          , "SubDataPropertyOf"
-                          , "EquivalentDataProperties"
-                          , "DisjointDataProperties"
-                          , "DataPropertyDomain"
-                          , "DataPropertyRange"
-                          , "DataPropertyAssertion"
-                          , "DatatypeDefinition"
-                          ])
-          , ("universal role", ["owl:topObjectProperty"])
-          , ("empty role", ["owl:bottomObjectProperty"])
-          , ("negative role assertions", ["NegativeObjectPropertyAssertion"])
-          , ("negative data assertions", ["NegativeDataPropertyAssertion"])
-          , ("self restrictions", ["ObjectHasSelf"])
-          , ("HasKey", ["HasKey"])
-          ]
+needles = expand [ ("Datatypes", [ "DataIntersectionOf"
+                                 , "DataUnionOf"
+                                 , "DataComplementOf"
+                                 , "DatatypeRestriction"
+                                 , "DataSomeValuesFrom"
+                                 , "DataAllValuesFrom"
+                                 , "DataHasValue"
+                                 , "DataMinCardinality"
+                                 , "DataMaxCardinality"
+                                 , "DataExactCardinality"
+                                 , "SubDataPropertyOf"
+                                 , "EquivalentDataProperties"
+                                 , "DisjointDataProperties"
+                                 , "DataPropertyDomain"
+                                 , "DataPropertyRange"
+                                 , "DataPropertyAssertion"
+                                 , "DatatypeDefinition"
+                                 ])
+                 , ("Datatypes-EL", [ "rdf:PlainLiteral"
+                                    , "rdf:XMLLiteral"
+                                    , "rdfs:Literal"
+                                    , "owl:real"
+                                    , "owl:rational"
+                                    , "xsd:decimal"
+                                    , "xsd:integer"
+                                    , "xsd:nonNegativeInteger"
+                                    , "xsd:string"
+                                    , "xsd:normalizedString"
+                                    , "xsd:token"
+                                    , "xsd:Name"
+                                    , "xsd:NCName"
+                                    , "xsd:NMTOKEN"
+                                    , "xsd:hexBinary"
+                                    , "xsd:base64Binary"
+                                    , "xsd:anyURI"
+                                    , "xsd:dateTime"
+                                    , "xsd:dateTimeStamp"
+                                    ])
+                 , ("Datatypes-non-EL", [ "xsd:double"
+                                        , "xsd:float"
+                                        , "xsd:nonPositiveInteger"
+                                        , "xsd:positiveInteger"
+                                        , "xsd:negativeInteger"
+                                        , "xsd:long"
+                                        , "xsd:int"
+                                        , "xsd:short"
+                                        , "xsd:byte"
+                                        , "xsd:unsignedLong"
+                                        , "xsd:unsignedInt"
+                                        , "xsd:unsignedShort"
+                                        , "xsd:unsignedByte"
+                                        , "xsd:language"
+                                        , "xsd:boolean"
+                                        ])
+                 , ("universal role", ["owl:topObjectProperty"])
+                 , ("empty role", ["owl:bottomObjectProperty"])
+                 , ("negative role assertions", ["NegativeObjectPropertyAssertion"])
+                 , ("negative data assertions", ["NegativeDataPropertyAssertion"])
+                 , ("self restrictions", ["ObjectHasSelf"])
+                 , ("HasKey", ["HasKey"])
+                 ]
+  where expand lst = go lst []
+        go :: [(Text, [Text])] -> [(Text, [Text])] -> [(Text, [Text])]
+        go [] res = res
+        go (tn@(tag, ns):tns) res
+          | length ns > 1 = go tns $! tn:[(tag <> "/" <> n, [n]) | n <- ns] ++ res
+          | otherwise = go tns $! tn:res
 
 type Count = HashMap Text Int
 
