@@ -2,7 +2,7 @@
 
 {- |
 Module      :  Main
-Copyright   :  (c) 2014 Maximilian Marx
+Copyright   :  (c) 2014, 2015 Maximilian Marx
 License     :  GPL-3
 Maintainer  :  Maximilian Marx <mmarx@wh2.tu-dresden.de>
 Stability   :  experimental
@@ -22,10 +22,13 @@ import Control.Monad ( void
                      , when
                      )
 import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.Resource ( ResourceT
+                                    , runResourceT
+                                    )
 import Data.Conduit ( ($$)
                     , (=$)
                     , await
-                    , runResourceT
                     , Sink
                     )
 import Data.Conduit.Text ( decode
@@ -33,9 +36,9 @@ import Data.Conduit.Text ( decode
                          , lines
                          )
 import qualified Data.Conduit.List as CL
-import Data.Conduit.Filesystem ( sourceFile
-                               , traverse
-                               )
+import Data.Conduit.Combinators ( sourceDirectoryDeep
+                                , sourceFile
+                                )
 import Data.HashMap.Strict ( HashMap
                            , elems
                            , empty
@@ -176,13 +179,15 @@ statTree path = case toText path of
     isF <- isFile path
     if isF
       then void $ statFile path
-      else (traverse True path $$ CL.foldMapM maybeStatFile) >>= printTree
+      else runResourceT $
+           (sourceDirectoryDeep True path $$ CL.foldMapM maybeStatFile)
+           >>= printTree
   where maybeStatFile p = case extension p of
-          Just "owl" -> statFile p
+          Just "owl" -> lift $ statFile p
           _ -> return []
 
-printTree :: [(Text, Count)] -> IO ()
-printTree stats = do
+printTree :: [(Text, Count)] -> ResourceT IO ()
+printTree stats = lift $ do
   let stats' = filter (any (/=0) . elems . snd) stats
       cnt = length stats'
   putStrLn $ "Found " <> show cnt <> " interesting ontologies."

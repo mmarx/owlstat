@@ -9,7 +9,7 @@ license:             GPL-3
 license-file:        LICENSE
 author:              Maximilian Marx
 maintainer:          mmarx@wh2.tu-dresden.de
-copyright:           2014 Maximilian Marx
+copyright:           2014, 2015 Maximilian Marx
 -- category:
 build-type:          Simple
 cabal-version:       >=1.8
@@ -19,11 +19,13 @@ executable owlstat
   -- other-modules:
   ghc-options:       -Wall -Werror -O2 -rtsopts=all
   ghc-prof-options:  -prof -auto-all -caf-all -rtsopts=all
-  build-depends:       base ==4.6.*
-                     , conduit ==1.0.*
-                     , filesystem-conduit ==1.0.*
-                     , system-fileio ==0.3.*
-                     , system-filepath ==0.4.*
-                     , text ==0.11.*
-                     , transformers ==0.3.*
-                     , unordered-containers ==0.2.*
+  build-depends:       base
+                     , conduit
+                     , conduit-combinators
+                     , conduit-extra
+                     , resourcet
+                     , system-fileio
+                     , system-filepath
+                     , text
+                     , transformers
+                     , unordered-containers

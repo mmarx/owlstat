@@ -6,3 +6,4 @@ dist*/
 *.hp
 *.prof
 *.ps
+.stack-work
